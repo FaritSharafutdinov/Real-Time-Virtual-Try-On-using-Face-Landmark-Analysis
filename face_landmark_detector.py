@@ -97,7 +97,7 @@ class FaceLandmarkDetector:
             landmarks: Dictionary of landmarks
             
         Returns:
-            anchor_points: List of 4 points [left_outer, left_inner, right_inner, right_outer]
+            anchor_points: List of 4 points [top-left, top-right, bottom-right, bottom-left]
         """
         if landmarks is None:
             return None
@@ -109,25 +109,28 @@ class FaceLandmarkDetector:
         if len(left_eye) == 0 or len(right_eye) == 0:
             return None
         
-        # Calculate eye centers and corners
+        # Calculate eye centers
         left_eye_center = np.mean(left_eye, axis=0)
         right_eye_center = np.mean(right_eye, axis=0)
         
-        # Find outer and inner corners
-        left_outer = left_eye[np.argmin(left_eye[:, 0])]  # Leftmost point
-        left_inner = left_eye[np.argmax(left_eye[:, 0])]  # Rightmost point
-        right_inner = right_eye[np.argmin(right_eye[:, 0])]  # Leftmost point
-        right_outer = right_eye[np.argmax(right_eye[:, 0])]  # Rightmost point
+        # Calculate the center point between eyes
+        eye_center = (left_eye_center + right_eye_center) / 2
         
-        # Adjust for glasses frame width
-        eye_distance = np.linalg.norm(right_inner - left_inner)
-        frame_width = eye_distance * 0.3
+        # Calculate eye distance and frame dimensions
+        eye_distance = np.linalg.norm(right_eye_center - left_eye_center)
+        frame_width = eye_distance * 1.8  # Wider than eye distance
+        frame_height = eye_distance * 0.6  # Height of glasses frame
         
+        # Calculate vertical position (slightly above eye center)
+        y_offset = -eye_distance * 0.1
+        
+        # Create 4 corner points for glasses rectangle
+        # Order: top-left, top-right, bottom-right, bottom-left
         anchor_points = np.array([
-            left_outer - [frame_width, 0],      # Left outer
-            left_inner + [frame_width * 0.5, 0],  # Left inner
-            right_inner - [frame_width * 0.5, 0], # Right inner
-            right_outer + [frame_width, 0]       # Right outer
+            [eye_center[0] - frame_width/2, eye_center[1] + y_offset - frame_height/2],  # Top left
+            [eye_center[0] + frame_width/2, eye_center[1] + y_offset - frame_height/2],  # Top right
+            [eye_center[0] + frame_width/2, eye_center[1] + y_offset + frame_height/2],  # Bottom right
+            [eye_center[0] - frame_width/2, eye_center[1] + y_offset + frame_height/2]   # Bottom left
         ], dtype=np.float32)
         
         return anchor_points
@@ -140,7 +143,7 @@ class FaceLandmarkDetector:
             landmarks: Dictionary of landmarks
             
         Returns:
-            anchor_points: List of 4 points for hat positioning
+            anchor_points: List of 4 points [top-left, top-right, bottom-right, bottom-left]
         """
         if landmarks is None:
             return None
@@ -148,37 +151,77 @@ class FaceLandmarkDetector:
         forehead_center = landmarks.get('forehead_center', [])
         forehead_left = landmarks.get('forehead_left', [])
         forehead_right = landmarks.get('forehead_right', [])
+        left_eye = landmarks.get('left_eye', [])
+        right_eye = landmarks.get('right_eye', [])
         
         if len(forehead_center) == 0:
             return None
         
         # Calculate forehead center
-        center = np.mean(forehead_center, axis=0)
+        forehead_center_point = np.mean(forehead_center, axis=0)
         
-        # Estimate hat width based on face width
-        if len(forehead_left) > 0 and len(forehead_right) > 0:
-            left_point = np.mean(forehead_left, axis=0)
-            right_point = np.mean(forehead_right, axis=0)
-            face_width = np.linalg.norm(right_point - left_point)
-        else:
-            # Fallback: use eye distance
-            left_eye = landmarks.get('left_eye', [])
-            right_eye = landmarks.get('right_eye', [])
-            if len(left_eye) > 0 and len(right_eye) > 0:
+        # Calculate eye center for reference
+        eye_center_y = None
+        if len(left_eye) > 0 and len(right_eye) > 0:
+            left_eye_center = np.mean(left_eye, axis=0)
+            right_eye_center = np.mean(right_eye, axis=0)
+            eye_center = (left_eye_center + right_eye_center) / 2
+            eye_center_y = eye_center[1]
+        
+        # Calculate head width more accurately using face outline
+        # Use the widest points of the face outline for better head width estimation
+        face_outline = landmarks.get('face_outline', [])
+        head_width = None
+        
+        if len(face_outline) > 0:
+            # Find the leftmost and rightmost points of the face outline
+            face_outline_array = np.array(face_outline)
+            leftmost_idx = np.argmin(face_outline_array[:, 0])
+            rightmost_idx = np.argmax(face_outline_array[:, 0])
+            leftmost_point = face_outline_array[leftmost_idx]
+            rightmost_point = face_outline_array[rightmost_idx]
+            head_width = np.linalg.norm(rightmost_point - leftmost_point)
+        
+        # Fallback methods if face outline is not available
+        if head_width is None or head_width < 50:  # Sanity check
+            if len(forehead_left) > 0 and len(forehead_right) > 0:
+                left_point = np.mean(forehead_left, axis=0)
+                right_point = np.mean(forehead_right, axis=0)
+                head_width = np.linalg.norm(right_point - left_point) * 1.4
+            elif len(left_eye) > 0 and len(right_eye) > 0:
                 left_center = np.mean(left_eye, axis=0)
                 right_center = np.mean(right_eye, axis=0)
-                face_width = np.linalg.norm(right_center - left_center) * 1.5
+                head_width = np.linalg.norm(right_center - left_center) * 2.2
             else:
-                face_width = 200  # Default
+                head_width = 200  # Default
         
-        hat_width = face_width * 1.2
-        hat_height = face_width * 0.4
+        # Hat width should match head width (maybe slightly wider for better coverage)
+        hat_width = head_width * 1.1  # Slightly wider than head for natural look
+        hat_height = head_width * 0.5  # Proportional height
         
+        # Calculate vertical offset to position hat on top of head (at hair level)
+        # Move hat much higher up from forehead
+        vertical_offset = 0
+        if eye_center_y is not None:
+            # Distance from eyes to forehead
+            eye_to_forehead_dist = abs(forehead_center_point[1] - eye_center_y)
+            # Move hat up significantly - 2.5x the distance from eyes to forehead
+            # This puts it at the top of the head / hair level
+            vertical_offset = -eye_to_forehead_dist * 2.5  # Negative Y means up
+        
+        # Center point for hat (moved way up from forehead to top of head)
+        hat_center = forehead_center_point.copy()
+        hat_center[1] += vertical_offset
+        
+        # Position hat on top of head (at hair level)
+        # Order: top-left, top-right, bottom-right, bottom-left
+        # Bottom of hat should be well above forehead, top should be at hair level
+        hat_bottom_y = forehead_center_point[1] + vertical_offset * 0.3  # Bottom is also raised
         anchor_points = np.array([
-            center + [-hat_width/2, -hat_height],  # Top left
-            center + [hat_width/2, -hat_height],     # Top right
-            center + [hat_width/2, 0],               # Bottom right
-            center + [-hat_width/2, 0]               # Bottom left
+            [hat_center[0] - hat_width/2, hat_center[1] - hat_height],  # Top left (at hair level)
+            [hat_center[0] + hat_width/2, hat_center[1] - hat_height],  # Top right (at hair level)
+            [hat_center[0] + hat_width/2, hat_bottom_y],                # Bottom right (above forehead)
+            [hat_center[0] - hat_width/2, hat_bottom_y]                 # Bottom left (above forehead)
         ], dtype=np.float32)
         
         return anchor_points

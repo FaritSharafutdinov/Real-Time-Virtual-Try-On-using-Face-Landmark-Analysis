@@ -98,20 +98,39 @@ class AccessoryOverlay:
         if warped_accessory is None:
             return frame
         
-        if method == 'alpha_blend':
-            result = self.alpha_blend(frame, warped_accessory)
-        else:
-            # Fallback to weighted blending
-            alpha = warped_accessory[:, :, 3] / 255.0 if warped_accessory.shape[2] == 4 else 1.0
+        # Ensure sizes match
+        if frame.shape[:2] != warped_accessory.shape[:2]:
+            h, w = frame.shape[:2]
+            warped_accessory = cv2.resize(warped_accessory, (w, h), interpolation=cv2.INTER_LINEAR)
+        
+        # Extract alpha channel
+        if warped_accessory.shape[2] == 4:
+            alpha = warped_accessory[:, :, 3] / 255.0
             overlay_rgb = warped_accessory[:, :, :3]
+        else:
+            # No alpha channel
+            alpha = np.ones((warped_accessory.shape[0], warped_accessory.shape[1]))
+            overlay_rgb = warped_accessory[:, :, :3]
+        
+        # Create mask for non-zero alpha regions (where accessory exists)
+        mask = alpha > 0.01
+        
+        if method == 'alpha_blend':
+            # Only blend where mask is True
+            result = frame.copy()
+            alpha_3d = np.stack([alpha, alpha, alpha], axis=2)
+            mask_3d = np.stack([mask, mask, mask], axis=2)
             
-            # Ensure sizes match
-            if frame.shape[:2] != overlay_rgb.shape[:2]:
-                h, w = frame.shape[:2]
-                overlay_rgb = cv2.resize(overlay_rgb, (w, h))
-                alpha = cv2.resize(alpha, (w, h))
-            
-            result = cv2.addWeighted(frame, 1 - alpha, overlay_rgb, alpha, 0)
+            # Blend only in masked regions
+            blended = (alpha_3d * overlay_rgb + (1 - alpha_3d) * frame).astype(np.uint8)
+            result = np.where(mask_3d, blended, frame)
+        else:
+            # Weighted blending
+            alpha_3d = np.stack([alpha, alpha, alpha], axis=2)
+            mask_3d = np.stack([mask, mask, mask], axis=2)
+            result = cv2.addWeighted(frame, 1 - alpha_3d, overlay_rgb, alpha_3d, 0)
+            # Apply mask
+            result = np.where(mask_3d, result, frame)
         
         return result
     

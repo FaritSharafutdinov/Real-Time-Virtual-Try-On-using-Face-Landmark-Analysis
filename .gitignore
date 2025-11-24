@@ -4,23 +4,8 @@ __pycache__/
 *$py.class
 *.so
 .Python
-build/
-develop-eggs/
-dist/
-downloads/
-eggs/
-.eggs/
-lib/
-lib64/
-parts/
-sdist/
-var/
-wheels/
-*.egg-info/
-.installed.cfg
-*.egg
 
-# Virtual Environment
+# Virtual environments
 venv/
 env/
 ENV/
@@ -36,8 +21,11 @@ ENV/
 # OS
 .DS_Store
 Thumbs.db
+desktop.ini
 
 # Project specific
-accessories/*.png
-!accessories/.gitkeep
+*.log
+*.tmp
 
+# Conda
+.conda/
