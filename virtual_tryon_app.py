@@ -5,6 +5,11 @@ Real-Time Virtual Try-On Application
 import cv2
 import numpy as np
 import os
+import sys
+
+# Add src directory to path
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'src'))
+
 from face_landmark_detector import FaceLandmarkDetector
 from geometric_transformer import GeometricTransformer
 from accessory_overlay import AccessoryOverlay

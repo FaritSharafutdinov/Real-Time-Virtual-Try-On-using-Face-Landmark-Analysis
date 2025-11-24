@@ -19,14 +19,16 @@ The system captures video from a webcam, detects faces, and extracts facial land
 ## Project Structure
 
 ```
-├── face_landmark_detector.py    # Face detection and landmark extraction
-├── geometric_transformer.py     # Geometric transformations
-├── accessory_overlay.py          # Overlay and blending
-├── virtual_tryon_app.py         # Main application
-├── check_camera.py               # Camera availability checker
-├── create_sample_accessories.py # Sample accessory generator
-├── requirements.txt              # Dependencies
+├── virtual_tryon_app.py         # Main application entry point
+├── src/                          # Core modules
+│   ├── face_landmark_detector.py # Face detection and landmark extraction
+│   ├── geometric_transformer.py  # Geometric transformations
+│   └── accessory_overlay.py      # Overlay and blending
+├── utils/                        # Utility scripts
+│   ├── check_camera.py          # Camera availability checker
+│   └── create_sample_accessories.py # Sample accessory generator
 ├── accessories/                  # Accessory images (PNG)
+├── requirements.txt              # Dependencies
 └── README.md
 ```
 
@@ -41,44 +43,52 @@ Note: If you have Python 3.13+, use Python 3.11 or 3.12. You can install it via 
 ## Installation
 
 1. Check Python version:
+
    ```bash
    python --version
    ```
+
    Should be 3.8 to 3.12.
 
 2. Create virtual environment (recommended):
+
    ```bash
    python3.12 -m venv venv
    source venv/bin/activate  # On Windows: venv\Scripts\activate
    ```
 
 3. Install dependencies:
+
    ```bash
    pip install -r requirements.txt
    ```
 
 4. Add accessories:
    Place PNG files with transparent background in `accessories/` directory.
+
    - Glasses: filename must contain "glasses"
    - Hats: filename must contain "hat" or "cap"
-   
+
    Examples: `glasses_1.png`, `hat_1.png`, `sunglasses.png`
 
 ## Usage
 
 Run the application:
+
 ```bash
 python virtual_tryon_app.py
 ```
 
 Or with specific camera:
+
 ```bash
 python virtual_tryon_app.py --camera 0
 ```
 
 Check available cameras:
+
 ```bash
-python check_camera.py
+python utils/check_camera.py
 ```
 
 ### Controls
