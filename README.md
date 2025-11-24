@@ -1,169 +1,142 @@
 # Real-Time Virtual Try-On using Face Landmark Analysis
 
-Проект представляет собой приложение дополненной реальности (AR) в реальном времени, которое позволяет пользователям виртуально примерять 2D аксессуары, такие как очки или шляпы, используя веб-камеру.
+Real-time AR application for virtual try-on of 2D accessories (glasses, hats) using webcam and face landmark detection.
 
-## Описание
+## Description
 
-Система работает путем захвата видео с веб-камеры, детекции лица пользователя и определения ключевых точек лица. На основе этих точек приложение позиционирует и трансформирует выбранный аксессуар так, чтобы он естественно следовал движениям головы пользователя. Для плавного и реалистичного наложения используются техники геометрического преобразования в сочетании с альфа-блендингом.
+The system captures video from a webcam, detects faces, and extracts facial landmarks. Based on these landmarks, accessories are positioned and transformed to follow head movements naturally. Geometric transformations and alpha-blending are used for realistic overlay.
 
-## Основные возможности
+## Features
 
-- ✅ Детекция лица в реальном времени с использованием MediaPipe Face Mesh
-- ✅ Определение 468 ключевых точек лица
-- ✅ Геометрические преобразования (перспективные и аффинные) для позиционирования аксессуаров
-- ✅ Альфа-блендинг для реалистичного наложения
-- ✅ Сглаживание для стабильности наложения
-- ✅ Переключение между несколькими аксессуарами
-- ✅ Поддержка различных типов аксессуаров (очки, шляпы)
+- Real-time face detection using MediaPipe Face Mesh
+- 468 facial landmark points extraction
+- Perspective and affine transformations for accessory positioning
+- Alpha-blending for realistic overlay
+- Smoothing for stable tracking
+- Multiple accessories support (glasses and hats simultaneously)
+- Random combination generator
 
-## Структура проекта
+## Project Structure
 
 ```
-cvp/
-├── face_landmark_detector.py    # Модуль детекции лица и landmarks
-├── geometric_transformer.py     # Модуль геометрических преобразований
-├── accessory_overlay.py          # Модуль наложения и блендинга
-├── virtual_tryon_app.py         # Основное приложение
-├── create_sample_accessories.py # Скрипт для создания тестовых аксессуаров
-├── requirements.txt              # Зависимости проекта
-├── accessories/                  # Папка с изображениями аксессуаров (PNG)
-└── README.md                     # Документация
+├── face_landmark_detector.py    # Face detection and landmark extraction
+├── geometric_transformer.py     # Geometric transformations
+├── accessory_overlay.py          # Overlay and blending
+├── virtual_tryon_app.py         # Main application
+├── check_camera.py               # Camera availability checker
+├── create_sample_accessories.py # Sample accessory generator
+├── requirements.txt              # Dependencies
+├── accessories/                  # Accessory images (PNG)
+└── README.md
 ```
 
-## Требования
+## Requirements
 
-- **Python 3.8 - 3.12** (MediaPipe не поддерживает Python 3.13+)
-- Веб-камера
+- Python 3.8 - 3.12 (MediaPipe doesn't support Python 3.13+)
+- Webcam
 - Windows/Linux/macOS
 
-> **Важно:** Если у вас установлен Python 3.13 или выше, вам нужно использовать Python 3.11 или 3.12. Вы можете:
-> - Установить Python 3.11/3.12 параллельно
-> - Использовать виртуальное окружение с нужной версией Python
-> - Использовать `pyenv` для управления версиями Python
+Note: If you have Python 3.13+, use Python 3.11 or 3.12. You can install it via Homebrew or use a virtual environment.
 
-## Установка
+## Installation
 
-1. **Проверьте версию Python:**
+1. Check Python version:
    ```bash
    python --version
    ```
-   Должна быть версия от 3.8 до 3.12 включительно.
+   Should be 3.8 to 3.12.
 
-2. **Обновите pip (рекомендуется):**
+2. Create virtual environment (recommended):
    ```bash
-   python -m pip install --upgrade pip
+   python3.12 -m venv venv
+   source venv/bin/activate  # On Windows: venv\Scripts\activate
    ```
 
-3. **Установите зависимости:**
+3. Install dependencies:
    ```bash
    pip install -r requirements.txt
    ```
 
-3. **Создайте тестовые аксессуары (опционально):**
-   ```bash
-   python create_sample_accessories.py
-   ```
+4. Add accessories:
+   Place PNG files with transparent background in `accessories/` directory.
+   - Glasses: filename must contain "glasses"
+   - Hats: filename must contain "hat" or "cap"
    
-   Это создаст папку `accessories/` с примерами аксессуаров (очки, солнцезащитные очки, шляпа).
+   Examples: `glasses_1.png`, `hat_1.png`, `sunglasses.png`
 
-4. **Добавьте свои аксессуары (опционально):**
-   
-   Поместите PNG файлы с прозрачным фоном в папку `accessories/`. 
-   - Для очков: используйте имя файла с "glasses" в названии
-   - Для шляп: используйте имя файла с "hat" или "cap" в названии
-   
-   Примеры: `my_glasses.png`, `cool_hat.png`, `sunglasses.png`
+## Usage
 
-## Использование
-
-Запустите основное приложение:
-
+Run the application:
 ```bash
 python virtual_tryon_app.py
 ```
 
-### Управление
+Or with specific camera:
+```bash
+python virtual_tryon_app.py --camera 0
+```
 
-- **'n' или 'N'** - Следующий аксессуар
-- **'p' или 'P'** - Предыдущий аксессуар
-- **'s' или 'S'** - Переключить сглаживание (высокое/низкое)
-- **'q' или ESC** - Выход из приложения
+Check available cameras:
+```bash
+python check_camera.py
+```
 
-### Требования к аксессуарам
+### Controls
 
-- Формат: PNG с альфа-каналом (прозрачный фон)
-- Рекомендуемый размер: 300-500 пикселей по ширине
-- Аксессуар должен быть ориентирован правильно (очки горизонтально, шляпа сверху)
+- **'g' or 'G'** - Switch glasses
+- **'h' or 'H'** - Switch hat
+- **'r' or 'R'** - Random combination (glasses + hat)
+- **'q' or ESC** - Quit
 
-## Технические детали
+### Accessory Requirements
 
-### Архитектура
+- Format: PNG with alpha channel (transparent background)
+- Recommended size: 300-500 pixels width
+- Proper orientation (glasses horizontal, hat from top)
 
-Проект состоит из четырех основных модулей:
+## Architecture
 
-1. **FaceLandmarkDetector** (`face_landmark_detector.py`)
-   - Использует MediaPipe Face Mesh для детекции лица
-   - Извлекает 468 ключевых точек лица
-   - Определяет точки привязки для различных типов аксессуаров
+The project consists of four main modules:
 
-2. **GeometricTransformer** (`geometric_transformer.py`)
-   - Вычисляет матрицы преобразования (перспективные и аффинные)
-   - Выполняет геометрическое искажение аксессуаров
-   - Реализует сглаживание для уменьшения дрожания
+1. **FaceLandmarkDetector** - Face detection and 468 landmark extraction using MediaPipe
+2. **GeometricTransformer** - Computes transformation matrices and warps accessories
+3. **AccessoryOverlay** - Handles alpha-blending and overlay operations
+4. **VirtualTryOnApp** - Main application integrating all modules
 
-3. **AccessoryOverlay** (`accessory_overlay.py`)
-   - Загружает изображения аксессуаров
-   - Выполняет альфа-блендинг
-   - Накладывает аксессуары на видео-кадры
+## Methodology
 
-4. **VirtualTryOnApp** (`virtual_tryon_app.py`)
-   - Интегрирует все модули
-   - Управляет видеопотоком с веб-камеры
-   - Обрабатывает пользовательский ввод
+Pipeline for each video frame:
 
-### Методология
+1. Face detection using MediaPipe Face Mesh
+2. Landmark extraction (eyes, nose, mouth, forehead)
+3. Geometric transformation based on anchor points
+4. Overlay and blending using alpha channel
 
-Система следует четырехэтапному пайплайну для каждого кадра видео:
+## Technologies
 
-1. **Детекция лица**: MediaPipe Face Mesh обнаруживает лицо в видеопотоке
-2. **Определение landmarks**: Извлекаются ключевые точки лица (глаза, нос, рот)
-3. **Геометрическое преобразование**: Вычисляется матрица преобразования на основе опорных точек аксессуара и соответствующих точек лица
-4. **Наложение и блендинг**: Аксессуар искажается согласно матрице и накладывается на кадр с использованием альфа-блендинга
+- OpenCV - Image and video processing
+- MediaPipe - Face detection and landmarks
+- NumPy - Mathematical operations
 
-### Используемые технологии
+## Performance
 
-- **OpenCV** - Обработка изображений и видео
-- **MediaPipe** - Детекция лица и определение landmarks
-- **NumPy** - Математические операции и работа с массивами
+- FPS displayed every 30 frames in console
+- Smoothing applied for stable tracking
+- Requirements: modern webcam and mid-range CPU
 
-## Производительность
-
-- **FPS**: Приложение выводит FPS каждые 30 кадров в консоль
-- **Оптимизация**: Используется сглаживание для стабильности наложения
-- **Требования**: Современная веб-камера и процессор средней мощности
-
-## Будущие улучшения
-
-- [ ] Поддержка нескольких лиц одновременно
-- [ ] Более точное позиционирование для различных типов аксессуаров
-- [ ] Регулировка размера аксессуаров в реальном времени
-- [ ] Сохранение скриншотов с наложенными аксессуарами
-- [ ] Графический интерфейс (GUI) вместо консольного управления
-
-## Авторы
+## Authors
 
 - Farit Sharafutdinov (f.sharafutdinov@innopolis.university)
 - Grigorii Belyaev (g.belyaev@innopolis.university)
 
 B23 - AI01, Innopolis University
 
-## Лицензия
+## License
 
-Этот проект создан в образовательных целях.
+Educational purposes only.
 
-## Ссылки
+## References
 
 - [OpenCV Documentation](https://docs.opencv.org/)
 - [MediaPipe Face Mesh](https://google.github.io/mediapipe/solutions/face_mesh.html)
 - [Computer Vision: Algorithms and Applications](https://szeliski.org/Book/)
-
